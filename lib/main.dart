@@ -112,6 +112,28 @@ class _WebRTCTestingState extends State<WebRTCTesting> {
     _peerConnection.setLocalDescription(_description);
   }
 
+  _createAnswer() async {
+    RTCSessionDescription description =
+        await _peerConnection.createAnswer({'offerToReceiveVideo': 1});
+
+    var session = parse(description.sdp!);
+
+    print(json.encode(session));
+    _peerConnection.setLocalDescription(description);
+  }
+
+  _setCandidate() async {
+    String jsonString = _sdpCandidateTFController.text;
+    dynamic session = await jsonDecode("jsonString");
+
+    print(session['candidate']);
+
+    dynamic candidate = RTCIceCandidate(
+        session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
+
+    await _peerConnection.addCandidate(candidate);
+  }
+
   _setRemoteDescription() async {
     String jsonString = _sdpCandidateTFController.text;
     dynamic session = await jsonDecode('$jsonString');
@@ -120,13 +142,23 @@ class _WebRTCTestingState extends State<WebRTCTesting> {
 
     RTCSessionDescription _description =
         RTCSessionDescription(_sdp, _offer ? 'answer' : 'offer');
+
+    print(_description.toMap());
+
+    await _peerConnection.setRemoteDescription(_description);
   }
 
   Row offerAndAnswerButtons() => Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          ElevatedButton(onPressed: _createOffer, child: Text("Offer")),
-          ElevatedButton(onPressed: () {}, child: Text("Answer")),
+          ElevatedButton(
+            onPressed: _createOffer,
+            child: Text("Offer"),
+          ),
+          ElevatedButton(
+            onPressed: _createAnswer,
+            child: Text("Answer"),
+          ),
         ],
       );
 
@@ -188,7 +220,10 @@ class _WebRTCTestingState extends State<WebRTCTesting> {
             onPressed: _setRemoteDescription,
             child: Text("Set Remote Desc.."),
           ),
-          ElevatedButton(onPressed: () {}, child: Text("Set Local Desc..")),
+          ElevatedButton(
+            onPressed: _setCandidate,
+            child: Text("Set Candidate.."),
+          ),
         ],
       );
 
